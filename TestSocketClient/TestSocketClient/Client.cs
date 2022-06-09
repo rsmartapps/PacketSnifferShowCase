@@ -1,46 +1,36 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace TestSocketClient
 {
-    public class SslTcpClient
+    public class Client
     {
-
         public async Task RunAsync()
         {
-            string hostname = Dns.GetHostName();
-            string hostCertificateName = "localhost";
             TcpClient client = new TcpClient();
-            client.Connect(hostname, 2130);
+            string host = Dns.GetHostName();
 
-            SslStream sslStream = new SslStream(
-                client.GetStream(),
-                false,
-                ValidateServerCertificate,
-                null
-                );
+            // Getting ip address using host name
+            client.Connect(host, 1230);
+
+            var stream = client.GetStream();
             try
             {
-                sslStream.AuthenticateAsClient(hostCertificateName);
                 do
                 {
                     byte[] messsage = Encoding.UTF8.GetBytes("Hello world!<EOF>");
                     // Send hello message to the server.
-                    sslStream.Write(messsage);
-                    sslStream.Flush();
+                    stream.Write(messsage);
+                    stream.Flush();
                     // Read message from the server.
-                    string serverMessage = await ReadMessageAsync(sslStream);
+                    string serverMessage = await ReadMessageAsync(stream);
                     Console.WriteLine("Server says: {0}", serverMessage);
-                    await Task.Delay(2000);
+                    await Task.Delay(TimeSpan.FromSeconds(2));
 
                 } while (true);
             }
@@ -57,7 +47,7 @@ namespace TestSocketClient
             }
         }
 
-        async Task<string> ReadMessageAsync(SslStream sslStream)
+        async Task<string> ReadMessageAsync(Stream sslStream)
         {
             // Read the  message sent by the server.
             // The end of the message is signaled using the
@@ -83,20 +73,6 @@ namespace TestSocketClient
             } while (bytes != 0);
 
             return messageData.ToString();
-        }
-
-
-
-
-
-        // Acept any certificate
-        bool ValidateServerCertificate(
-                      object sender,
-                      X509Certificate certificate,
-                      X509Chain chain,
-                      SslPolicyErrors sslPolicyErrors)
-        {
-            return true;
         }
     }
 }
